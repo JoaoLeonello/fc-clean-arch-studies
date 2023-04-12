@@ -1,3 +1,4 @@
+import { Model } from "sequelize-typescript";
 import Order from "../../../../domain/checkout/entity/order";
 import OrderItemModel from "./order-item.model";
 import OrderModel from "./order.model";
@@ -21,5 +22,36 @@ export default class OrderRepository {
         include: [{ model: OrderItemModel }],
       }
     );
+  }
+
+  async update(entity: Order): Promise<void> {
+    await Promise.all([
+      entity.items.map(async item => {
+        await OrderItemModel.update({
+          id: item.id,
+          name: item.name,
+          price: item.price,
+          product_id: item.productId,
+          order_id: entity.id,
+          quantity: item.quantity,
+        }, { where: { id: item.id }})
+      }),
+
+      await OrderModel.upsert({
+        id: entity.id,
+        customer_id: entity.customerId,
+        total: entity.total(),
+      })
+    ]);      
+  }
+
+  async find(entityId: string): Promise<Model[]> {
+    return await OrderModel.findAll({ where: { id: entityId },
+      include: [{ model: OrderItemModel }]
+    });
+  }
+
+  async findAll(): Promise<Model[]> {
+    return await OrderModel.findAll();
   }
 }
