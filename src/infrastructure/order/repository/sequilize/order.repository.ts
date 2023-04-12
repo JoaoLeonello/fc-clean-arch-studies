@@ -1,9 +1,10 @@
-import { Model } from "sequelize-typescript";
 import Order from "../../../../domain/checkout/entity/order";
+import OrderItem from "../../../../domain/checkout/entity/order_item";
+import OrderRepositoryInterface from "../../../../domain/checkout/repository/order-repository.interface";
 import OrderItemModel from "./order-item.model";
 import OrderModel from "./order.model";
 
-export default class OrderRepository {
+export default class OrderRepository implements OrderRepositoryInterface {
   async create(entity: Order): Promise<void> {
     await OrderModel.create(
       {
@@ -45,13 +46,28 @@ export default class OrderRepository {
     ]);      
   }
 
-  async find(entityId: string): Promise<Model[]> {
-    return await OrderModel.findAll({ where: { id: entityId },
-      include: [{ model: OrderItemModel }]
+  async find(entityId: string): Promise<Order> {
+    const orderModel = await OrderModel.findOne({ 
+      where: { entityId },
+      include: [{model: OrderItemModel, as: 'items'}]
     });
+
+      return new Order(orderModel.id, orderModel.customer_id, orderModel.items.map((item) =>
+      {
+        return new OrderItem(item.id, item.name, item.price, item.product_id, item.quantity)
+      }))
   }
 
-  async findAll(): Promise<Model[]> {
-    return await OrderModel.findAll();
+  async findAll(): Promise<Order[]> {
+    const orderModelFindAll = await OrderModel.findAll();
+
+    const orderFindAll = orderModelFindAll.map(orderModel => {
+      return new Order(orderModel.id, orderModel.customer_id, orderModel.items.map((item) =>
+      {
+        return new OrderItem(item.id, item.name, item.price, item.product_id, item.quantity)
+      }))
+    })
+
+    return orderFindAll;
   }
 }
