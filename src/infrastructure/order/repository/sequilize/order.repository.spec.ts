@@ -194,21 +194,21 @@ describe("Order repository test", () => {
 
     const findOrder = await orderRepository.find(order.id);
 
-    expect(JSON.parse(JSON.stringify(findOrder))).toStrictEqual([{
-      id: "123",
-      customer_id: "123",
-      total: order.total(),
-      items: [
+    expect(JSON.parse(JSON.stringify(findOrder))).toStrictEqual({
+      _id: "123",
+      _customerId: "123",
+      _total: order.total(),
+      _items: [
         {
-          id: orderItem.id,
-          name: orderItem.name,
-          price: orderItem.price,
-          quantity: orderItem.quantity,
-          order_id: "123",
-          product_id: "123",
+          _id: orderItem.id,
+          _name: orderItem.name,
+          _price: orderItem.price,
+          _quantity: orderItem.quantity,
+          _productId: "123",
+          _total: orderItem.total()
         },
       ],
-    }]);
+    });
   });
 
   it("should find all orders", async () => {
@@ -249,8 +249,16 @@ describe("Order repository test", () => {
 
     expect(JSON.parse(JSON.stringify(findOrder))).toStrictEqual(
       [
-        { id: '123', customer_id: '123', total: 20 },
-        { id: '1234', customer_id: '123', total: 10 }
+        { _id: '123', _customerId: '123', _total: 20, _items: 
+        [
+          { _id: "1", _name: "Product 1" , _price: 10, _productId: "123", _quantity: 2, _total: 20 }
+        ]  
+      },
+        { _id: '1234', _customerId: '123', _total: 10, _items: 
+          [
+            { _id: "2", _name: "Product 1" , _price: 10, _productId: "123", _quantity: 1, _total: 10 }
+          ]  
+        }
       ]
     )
   });
