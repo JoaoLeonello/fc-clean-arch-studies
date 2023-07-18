@@ -1,5 +1,7 @@
+import { Sequelize } from "sequelize-typescript";
 import Customer from "../../../domain/customer/entity/customer";
 import Address from "../../../domain/customer/value-object/address";
+import CustomerModel from "../../../infrastructure/customer/repository/sequelize/customer.model";
 import CustomerRepository from "../../../infrastructure/customer/repository/sequelize/customer.repository";
 import FindCustomerUseCase from "./find.customer.usecase";
 
@@ -7,19 +9,29 @@ const customer = new Customer("123", "John");
 const address = new Address("Street", 123, "Zip", "City");
 customer.changeAddress(address);
 
-const MockRepository = () => {
-  return {
-    find: jest.fn().mockReturnValue(Promise.resolve(customer)),
-    findAll: jest.fn(),
-    create: jest.fn(),
-    update: jest.fn(),
-  };
-};
+let sequelize: Sequelize;
 
-describe("Unit Test find customer use case", () => {
+beforeEach(async () => {
+  sequelize = new Sequelize({
+    dialect: "sqlite",
+    storage: ":memory:",
+    logging: false,
+    sync: { force: true },
+  });
+
+  await sequelize.addModels([CustomerModel]);
+  await sequelize.sync();
+});
+
+afterEach(async () => {
+  await sequelize.close();
+});
+
+describe("Test find customer use case", () => {
   it("should find a customer", async () => {
     const customerRepository = new CustomerRepository();
     const usecase = new FindCustomerUseCase(customerRepository);
+    
     await customerRepository.create(customer);
 
     const input = {
@@ -42,19 +54,4 @@ describe("Unit Test find customer use case", () => {
     expect(result).toEqual(output);
   });
 
-  it("should not find a customer", async () => {
-    const customerRepository = MockRepository();
-    customerRepository.find.mockImplementation(() => {
-      throw new Error("Customer not found");
-    });
-    const usecase = new FindCustomerUseCase(customerRepository);
-
-    const input = {
-      id: "123",
-    };
-
-    expect(() => {
-      return usecase.execute(input);
-    }).rejects.toThrow("Customer not found");
-  });
 });

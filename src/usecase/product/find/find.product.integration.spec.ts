@@ -1,21 +1,35 @@
+import { Sequelize } from "sequelize-typescript";
 import ProductFactory from "../../../domain/product/factory/product.factory";
+import ProductModel from "../../../infrastructure/product/repository/sequelize/product.model";
+import ProductRepository from "../../../infrastructure/product/repository/sequelize/product.repository";
 import FindProductUseCase from "./find.product.usecase";
 
 const product = ProductFactory.create("a", "Chinelo", 28.00);
 
-const MockRepository = () => {
-  return {
-    find: jest.fn().mockReturnValue(Promise.resolve(product)),
-    findAll: jest.fn(),
-    create: jest.fn(),
-    update: jest.fn(),
-  };
-};
+let sequelize: Sequelize;
 
-describe("Unit Test find product use case", () => {
+beforeEach(async () => {
+  sequelize = new Sequelize({
+    dialect: "sqlite",
+    storage: ":memory:",
+    logging: false,
+    sync: { force: true },
+  });
+
+  await sequelize.addModels([ProductModel]);
+  await sequelize.sync();
+});
+
+afterEach(async () => {
+  await sequelize.close();
+});
+
+describe("Test find product use case", () => {
   it("should find a product", async () => {
-    const productRepository = MockRepository();
+    const productRepository = new ProductRepository();
     const usecase = new FindProductUseCase(productRepository);
+    
+    // @ts-ignore
     await productRepository.create(product);
 
     const input = {
@@ -24,8 +38,8 @@ describe("Unit Test find product use case", () => {
 
     const output = {
       id: product.id,
-      name: "Chinelo",
-      price: 28.00
+      name: product.name,
+      price: product.price
     };
 
     const result = await usecase.execute(input);
@@ -33,19 +47,4 @@ describe("Unit Test find product use case", () => {
     expect(result).toEqual(output);
   });
 
-  it("should not find a product", async () => {
-    const productRepository = MockRepository();
-    productRepository.find.mockImplementation(() => {
-      throw new Error("Product not found");
-    });
-    const usecase = new FindProductUseCase(productRepository);
-
-    const input = {
-      id: "123",
-    };
-
-    expect(() => {
-      return usecase.execute(input);
-    }).rejects.toThrow("Product not found");
-  });
 });
