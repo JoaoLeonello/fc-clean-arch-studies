@@ -8,7 +8,7 @@ export default class ProductYupValidator implements ValidatorInterface<Product> 
             yup.object().shape({
                 id: yup.string().required("Id is required"),
                 name: yup.string().required("Name is required"),
-                price: yup.number().positive().required()
+                price: yup.number().positive().required("Price is required"),
             })
             .validateSync(
                 {
